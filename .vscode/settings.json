@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "node_api.h": "c"
+        "node_api.h": "c",
+        "napi_net_helper.h": "c",
+        "napi_util.h": "c",
+        "ostream": "cpp"
     }
 }

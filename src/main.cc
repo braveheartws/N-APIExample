@@ -1,7 +1,10 @@
 #include <node_api.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
+#include "include/napi_util.h"
+#include "napi_net_helper.cpp"
 typedef struct Context
 {
     napi_deferred deferred;
@@ -134,6 +137,56 @@ napi_value NapiAsyncCall(napi_env env, napi_callback_info info)
     return promise_value;
 }
 
+napi_value ReadJSInputArg(napi_env env, napi_callback_info info) {
+    napi_value ret = NULL;
+    napi_status stats = napi_ok;
+
+    size_t argc = 2;
+    napi_value argv[2] = {0};
+    napi_value thisVar = nullptr;
+    void *data = nullptr;
+    stats = napi_get_cb_info(env,info,&argc, argv,&thisVar,&data);
+    assert(stats == napi_ok);
+
+    int32_t arg1 = 0;
+    stats = napi_get_value_int32(env, argv[0], &arg1);
+    assert(stats == napi_ok);
+    
+    char buf[30] = {};
+    GetStringProperty(buf,env,argv[1],"name");
+
+    int32_t age = GetIntProperty(env,argv[1],"age");
+
+    stats = napi_create_string_utf8(env,buf,sizeof(buf),&ret);
+    assert(stats == napi_ok);
+
+    stats =  napi_create_int32(env,age,&ret);
+    assert(stats == napi_ok);
+    return ret;
+}
+
+napi_value ReturnNativeObject(napi_env env, napi_callback_info info) {
+    napi_value ret = NULL;
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+    napi_value propValue;
+    char buf[] = "wintersweett";
+    napi_create_string_utf8(env,buf,sizeof(buf) - 1,&propValue);
+
+    napi_value propName;
+    char keyBuf[] = "braveheart";
+    napi_create_string_utf8(env,keyBuf,sizeof(keyBuf) - 1,&propName);
+    napi_set_property(env,obj,propName,propValue);
+
+    return obj;
+}
+
+napi_value SetNetStats(napi_env env,napi_callback_info info) {
+    return ChangeNetStats(env,info);
+}
+
 #define MAP_JS_NAPI_METHOD(jsMethId, napiMethId)             \
     {                                                  \
         jsMethId, 0, napiMethId, 0, 0, 0, napi_default, 0 \
@@ -147,6 +200,9 @@ extern "C"
             MAP_JS_NAPI_METHOD("hello", NapiHello),
             MAP_JS_NAPI_METHOD("sum", NapiSum),
             MAP_JS_NAPI_METHOD("asyncCall", NapiAsyncCall),
+            MAP_JS_NAPI_METHOD("readJSInputArg",ReadJSInputArg),
+            MAP_JS_NAPI_METHOD("returnNativeObject", ReturnNativeObject),
+            MAP_JS_NAPI_METHOD("setNetStats", SetNetStats),
         };
         napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
         return exports;
